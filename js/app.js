@@ -21,7 +21,7 @@ function parseNodesFromMMD(mmdText) {
     return Array.from(nodes, ([id, label]) => ({id, label}));
 }
 
-function buildSidebar(nodes, onToggle, onShowAll, onHideAll) {
+function buildSidebar(nodes, onToggle, onShowAll, onHideAll, onShowDescendants, onShowAncestors) {
     const list = document.getElementById('nodesList');
     list.innerHTML = '';
 
@@ -36,11 +36,25 @@ function buildSidebar(nodes, onToggle, onShowAll, onHideAll) {
         cb.type = 'checkbox';
         cb.checked = true;
         cb.id = `cb-${id}`;
+
         const lab = document.createElement('label');
         lab.htmlFor = cb.id;
         lab.textContent = `${id} — ${label}`;
+
+        const btnDesc = document.createElement('button');
+        btnDesc.type = 'button';
+        btnDesc.textContent = '⇩';
+        btnDesc.title = 'Show all descendants';
+        btnDesc.addEventListener('click', () => onShowDescendants(id));
+
+        const btnAnc = document.createElement('button');
+        btnAnc.type = 'button';
+        btnAnc.textContent = '⇧';
+        btnAnc.title = 'Show all ancestors (parents)';
+        btnAnc.addEventListener('click', () => onShowAncestors(id));
+
         cb.addEventListener('change', () => onToggle(id, cb.checked));
-        item.append(cb, lab);
+        item.append(cb, lab, btnDesc, btnAnc);
         list.appendChild(item);
     }
 }
@@ -211,6 +225,37 @@ async function main() {
 
     const diagramEl = document.getElementById('diagram');
 
+    // Build adjacency (directed)
+    const out = new Map(); // id -> Set of children (descendants via outgoing edges)
+    const inn = new Map(); // id -> Set of parents (ancestors via incoming edges)
+    function ensure(map, key) { if (!map.has(key)) map.set(key, new Set()); return map.get(key); }
+    for (const id of model.nodesMap.keys()) { ensure(out, id); ensure(inn, id); }
+    for (const e of model.edges) {
+        const op = e.op || '';
+        if (op.includes('>')) {
+            ensure(out, e.a).add(e.b);
+            ensure(inn, e.b).add(e.a);
+        }
+        if (op.includes('<')) {
+            ensure(out, e.b).add(e.a);
+            ensure(inn, e.a).add(e.b);
+        }
+    }
+
+    function bfs(startId, map) {
+        const visited = new Set();
+        const q = [startId];
+        visited.add(startId);
+        while (q.length) {
+            const cur = q.shift();
+            const nexts = map.get(cur) || new Set();
+            for (const nx of nexts) {
+                if (!visited.has(nx)) { visited.add(nx); q.push(nx); }
+            }
+        }
+        return visited;
+    }
+
     // State and rerender
     const state = new Map(nodes.map(n => [n.id, true]));
     const rerender = async () => {
@@ -248,7 +293,27 @@ async function main() {
         await rerender();
     };
 
-    buildSidebar(nodes, onToggle, onShowAll, onHideAll);
+    const onShowDescendants = async (id) => {
+        const visibleSet = bfs(id, out);
+        for (const vid of visibleSet) {
+            state.set(vid, true);
+            const cb = document.getElementById(`cb-${vid}`);
+            if (cb) cb.checked = true;
+        }
+        await rerender();
+    };
+
+    const onShowAncestors = async (id) => {
+        const visibleSet = bfs(id, inn);
+        for (const vid of visibleSet) {
+            state.set(vid, true);
+            const cb = document.getElementById(`cb-${vid}`);
+            if (cb) cb.checked = true;
+        }
+        await rerender();
+    };
+
+    buildSidebar(nodes, onToggle, onShowAll, onHideAll, onShowDescendants, onShowAncestors);
 }
 
 window.myCallback = (id) => {
