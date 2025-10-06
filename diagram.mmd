@@ -1,0 +1,24 @@
+---
+title: Test Filter Mermaid
+---
+
+flowchart TD
+    subgraph A["Graph A"]
+        toto[Le toto]
+        tete[Le tete]
+    end
+
+    subgraph B["Graph B"]
+        tata[Le tata]
+        titi[Le titi]
+    end
+
+    subgraph C["Graph C"]
+        onch[Onch]
+        truc[Le Truc]
+    end
+
+    toto --> tata
+    toto --> titi
+    titi --> tata
+    tete --> titi

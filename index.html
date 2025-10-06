@@ -1,0 +1,57 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mermaid Filter</title>
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+        .layout { display: flex; height: 100vh; }
+        .sidebar {
+            width: 260px;
+            max-width: 40vw;
+            border-right: 1px solid #e5e7eb;
+            padding: 12px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+        .sidebar h2 { margin: 0 0 8px; font-size: 16px; }
+        .controls { display: flex; gap: 8px; margin-bottom: 8px; }
+        .nodes-list { display: flex; flex-direction: column; gap: 6px; }
+        .node-item { display: flex; align-items: center; gap: 8px; }
+        .node-item label { cursor: pointer; }
+        .content { flex: 1; overflow: auto; position: relative; }
+        #diagram { margin: 0; padding: 16px; }
+        .hidden { display: none !important; }
+        .pill { font-size: 12px; padding: 2px 6px; border-radius: 999px; background: #eef2ff; color: #3730a3; }
+        .footer { font-size: 11px; color: #6b7280; margin-top: 8px; }
+    </style>
+</head>
+
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <h2>Diagram Controls</h2>
+        <div class="controls">
+            <button id="showAllBtn" type="button">Show all</button>
+            <button id="hideAllBtn" type="button">Hide all</button>
+        </div>
+        <div class="nodes-list" id="nodesList" aria-live="polite"></div>
+        <div class="footer">
+            <span class="pill">Tip</span> Toggle nodes to show/hide them and their connected edges.
+        </div>
+    </aside>
+    <main class="content">
+        <pre class="mermaid" id="diagram"></pre>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js"
+        integrity="sha256-B+N9+pezN8zIU2XVft35m5cG8J2ztZsmDQMzsjs0PEs=" crossorigin="anonymous"></script>
+<script src="js/app.js"></script>
+</body>
+
+</html>
