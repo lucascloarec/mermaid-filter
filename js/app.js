@@ -1,7 +1,6 @@
 mermaid.initialize({
     securityLevel: 'loose',
     startOnLoad: false,
-    logLevel: 'trace'
 });
 
 function parseNodesFromMMD(mmdText) {
@@ -44,53 +43,6 @@ function buildSidebar(nodes, onToggle, onShowAll, onHideAll) {
         item.append(cb, lab);
         list.appendChild(item);
     }
-}
-
-function cssEscapeSafe(value) {
-    if (window.CSS && CSS.escape) return CSS.escape(value);
-    return value.replace(/[^\w-]/g, s => `\\${s}`);
-}
-
-function findNodeElements(svgRoot, nodeId) {
-    const id = cssEscapeSafe(nodeId);
-    const selectors = [
-        `#${id}`,
-        `[id$="-${id}"]`,
-        `g.node#${id}`,
-        `g[id*="${id}"]`,
-        `[data-id="${id}"]`
-    ];
-    const set = new Set();
-    for (const sel of selectors) {
-        svgRoot.querySelectorAll(sel).forEach(el => set.add(el));
-    }
-    // Also include shapes inside group that carries data-id attribute
-    const group = svgRoot.querySelector(`g[data-id="${id}"]`);
-    if (group) group.querySelectorAll('*').forEach(el => set.add(el));
-    return Array.from(set);
-}
-
-function findEdgeElements(svgRoot, nodeId) {
-    const id = cssEscapeSafe(nodeId);
-    const selectors = [
-        `.edgePath.LS-${id}`,
-        `.edgePath.LE-${id}`,
-        `.edge.LS-${id}`,
-        `.edge.LE-${id}`,
-        `[class*="LS-${id}"]`,
-        `[class*="LE-${id}"]`,
-        `.flowchart-link.LS-${id}`,
-        `.flowchart-link.LE-${id}`
-    ];
-    const set = new Set();
-    for (const sel of selectors) svgRoot.querySelectorAll(sel).forEach(el => set.add(el));
-    return Array.from(set);
-}
-
-function toggleNode(svgRoot, nodeId, visible) {
-    const method = visible ? 'remove' : 'add';
-    for (const el of findNodeElements(svgRoot, nodeId)) el.classList[method]('hidden');
-    for (const el of findEdgeElements(svgRoot, nodeId)) el.classList[method]('hidden');
 }
 
 function parseDiagram(mmdText) {
