@@ -8,7 +8,7 @@ function parseNodesFromMMD(mmdText) {
     // Rough parser: find lines like `id[Label]` (ignores subgraph and edges)
     const nodes = new Map();
     const lines = mmdText.split(/\n/);
-    const nodeRegex = /^\s*([A-Za-z][\w-]*)\s*\[(.+?)\]\s*$/;
+    const nodeRegex = /^\s*([A-Za-z][\w-]*)\s*\[(.+?)]\s*$/;
     for (const line of lines) {
         if (/^\s*subgraph\b/i.test(line)) continue;
         if (/-->|==>|-\.|\|/.test(line)) continue; // skip edges
@@ -120,8 +120,8 @@ function parseDiagram(mmdText) {
         }
     }
 
-    const nodeRegex = /^\s*([A-Za-z][\w-]*)\s*\[(.+?)\]\s*$/;
-    const edgeRegex = /^\s*([A-Za-z][\w-]*)\s*([\-=\.]*>+)\s*([A-Za-z][\w-]*)\s*$/;
+    const nodeRegex = /^\s*([A-Za-z][\w-]*)\s*\[(.+?)]\s*$/;
+    const edgeRegex = /^\s*([A-Za-z][\w-]*)\s*([\-=.]*>+)\s*([A-Za-z][\w-]*)\s*$/;
     const subgraphHeaderRegex = /^\s*subgraph\b(.*)$/i;
 
     const subgraphs = [];
@@ -220,7 +220,7 @@ async function main() {
     const state = new Map(nodes.map(n => [n.id, true]));
     const rerender = async () => {
         diagramEl.textContent = buildFilteredMMD(model, state);
-        if(diagramEl.attributes.getNamedItem("data-processed")){
+        if (diagramEl.attributes.getNamedItem('data-processed')) {
             diagramEl.attributes.removeNamedItem('data-processed')
         }
         await mermaid.run();
@@ -229,8 +229,6 @@ async function main() {
 
     // Initial render
     await rerender();
-
-
 
     // Sidebar handlers
     const onToggle = async (id, checked) => {
