@@ -3,19 +3,50 @@ mermaid.initialize({
     startOnLoad: false,
 });
 
+function parseNodeLine(line) {
+    // Try to parse a Mermaid node with various shapes. Returns {id,label,open,close} or null
+    const m = line.match(/^\s*([A-Za-z][\w-]*)\s*(.*)$/);
+    if (!m) return null;
+    const id = m[1];
+    let rest = (m[2] || '').split('%%')[0].trim(); // strip inline comments
+    if (!rest) return null;
+    const pairs = [
+        { open: '(', close: ')' }, // single paren (round edges)
+        { open: '((', close: '))' }, // circle
+        { open: '[[', close: ']]' }, // subroutine
+        { open: '{{', close: '}}' }, // hexagon
+        { open: '([', close: '])' }, // stadium
+        { open: '[(', close: ')]' }, // database/cylinder
+        { open: '[/', close: '/]' }, // parallelogram
+        { open: '[\\', close: '\\]' }, // parallelogram alt
+        { open: '[/', close: '\\]' }, // trapezoid variant
+        { open: '[\\', close: '/]' }, // trapezoid variant alt
+        { open: '>', close: ']' }, // asymmetric
+        { open: '[', close: ']' }, // rectangle (default)
+        { open: '{', close: '}' }, // rhombus/diamond
+    ];
+    // Sort by open length descending to prefer longer tokens first
+    pairs.sort((a,b)=>b.open.length - a.open.length);
+    for (const p of pairs) {
+        if (rest.startsWith(p.open) && rest.endsWith(p.close)) {
+            const label = rest.slice(p.open.length, rest.length - p.close.length).trim();
+            return { id, label, open: p.open, close: p.close };
+        }
+    }
+    return null;
+}
+
 function parseNodesFromMMD(mmdText) {
-    // Rough parser: find lines like `id[Label]` (ignores subgraph and edges)
+    // Parser for sidebar: find lines that define nodes with any supported shape
     const nodes = new Map();
     const lines = mmdText.split(/\n/);
-    const nodeRegex = /^\s*([A-Za-z][\w-]*)\s*\[(.+?)]\s*$/;
     for (const line of lines) {
         if (/^\s*subgraph\b/i.test(line)) continue;
         if (/-->|==>|-\.|\|/.test(line)) continue; // skip edges
-        const m = line.match(nodeRegex);
-        if (m) {
-            const id = m[1];
-            const label = m[2].replace(/\\n/g, ' ');
-            nodes.set(id, label);
+        const node = parseNodeLine(line);
+        if (node) {
+            const label = node.label.replace(/\\n/g, ' ');
+            nodes.set(node.id, label);
         }
     }
     return Array.from(nodes, ([id, label]) => ({id, label}));
@@ -86,11 +117,10 @@ function parseDiagram(mmdText) {
         }
     }
 
-    const nodeRegex = /^\s*([A-Za-z][\w-]*)\s*\[(.+?)]\s*$/;
     const edgeRegex = /^\s*([A-Za-z][\w-]*)\s*([<>=.-]+)\s*([A-Za-z][\w-]*)\s*$/;
     const subgraphHeaderRegex = /^\s*subgraph\b(.*)$/i;
     const classDefRegex = /^\s*classDef\s+([A-Za-z][\w-]*)\s+(.+)$/i;
-    const classAssignRegex = /^\s*class\s+([^\s].*?)\s+([A-Za-z][\w-]*)\s*$/i;
+    const classAssignRegex = /^\s*class\s+(\S.*?)\s+([A-Za-z][\w-]*)\s*$/i;
 
     const subgraphs = [];
     const nodesMap = new Map(); // id -> { id, label, subgraphId: string|null }
@@ -141,12 +171,11 @@ function parseDiagram(mmdText) {
             continue;
         }
 
-        const nm = line.match(nodeRegex);
-        if (nm) {
-            const id = nm[1];
-            const label = nm[2];
-            const node = {id, label};
-            nodesMap.set(id, {id, label, subgraphId: currentSubgraph ? currentSubgraph.id : null});
+        const nodeParsed = parseNodeLine(line);
+        if (nodeParsed) {
+            const { id, label, open, close } = nodeParsed;
+            const node = { id, label, open, close };
+            nodesMap.set(id, { id, label, open, close, subgraphId: currentSubgraph ? currentSubgraph.id : null });
             if (currentSubgraph) currentSubgraph.nodes.push(node); else topNodes.push(node);
             continue;
         }
@@ -182,14 +211,22 @@ function buildFilteredMMD(model, visibleMap) {
         const kept = sg.nodes.filter(n => isVisible(n.id));
         if (!kept.length) continue;
         out.push(`    ${sg.headerLine}`);
-        for (const n of kept) out.push(`        ${n.id}[${n.label}]`);
+        for (const n of kept) {
+            const open = (n && n.open) ? n.open : '[';
+            const close = (n && n.close) ? n.close : ']';
+            out.push(`        ${n.id}${open}${n.label}${close}`);
+        }
         out.push('    end');
         out.push('');
     }
 
     // Top-level nodes
     const keptTop = model.topNodes.filter(n => isVisible(n.id));
-    for (const n of keptTop) out.push(`    ${n.id}[${n.label}]`);
+    for (const n of keptTop) {
+        const open = (n && n.open) ? n.open : '[';
+        const close = (n && n.close) ? n.close : ']';
+        out.push(`    ${n.id}${open}${n.label}${close}`);
+    }
     if (keptTop.length) out.push('');
 
     // Class assignments for visible nodes

@@ -7,19 +7,23 @@ flowchart TD
 
 
     subgraph A["Graph A"]
-        toto[Le toto]
-        tete[Le tete]
+        toto[(Le toto)]
+        tyty([Le tyty])
+        tete[/Le tete/]
     end
     class toto orange
 
     subgraph B["Graph B"]
-        tata[Le tata]
-        titi[Le titi]
+        tata{Le tata}
+        titi(((Le titi)))
     end
 
     subgraph C["Graph C"]
-        onch[Onch]
-        truc[Le Truc]
+        onch[/Onch\]
+        truc[\Le Truc/]
+        ouf{{Le Ouf}}
+        dingue>Le Dingue]
+        rigolo[[Le Rigolo]]
     end
 
     toto --> tata
