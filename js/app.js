@@ -121,7 +121,7 @@ function parseDiagram(mmdText) {
     }
 
     const nodeRegex = /^\s*([A-Za-z][\w-]*)\s*\[(.+?)]\s*$/;
-    const edgeRegex = /^\s*([A-Za-z][\w-]*)\s*([\-=.]*>+)\s*([A-Za-z][\w-]*)\s*$/;
+    const edgeRegex = /^\s*([A-Za-z][\w-]*)\s*([<>=.-]+)\s*([A-Za-z][\w-]*)\s*$/;
     const subgraphHeaderRegex = /^\s*subgraph\b(.*)$/i;
     const classDefRegex = /^\s*classDef\s+([A-Za-z][\w-]*)\s+(.+)$/i;
     const classAssignRegex = /^\s*class\s+([^\s].*?)\s+([A-Za-z][\w-]*)\s*$/i;
