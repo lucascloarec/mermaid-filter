@@ -235,6 +235,13 @@ function buildFilteredMMD(model, visibleMap) {
         out.push('');
     }
 
+    // Click handlers for visible nodes (Mermaid will call window.myCallback(id))
+    const visibleIds = Array.from(model.nodesMap.keys()).filter(id => isVisible(id));
+    for (const id of visibleIds) {
+        out.push(`    click ${id} myCallback`);
+    }
+    if (visibleIds.length) out.push('');
+
     // Edges where both ends visible
     for (const e of model.edges) {
         if (isVisible(e.a) && isVisible(e.b)) {
@@ -290,6 +297,10 @@ async function main() {
     };
 
     buildSidebar(nodes, onToggle, onShowAll, onHideAll);
+}
+
+window.myCallback = (id) => {
+   console.log(id);
 }
 
 main().catch(console.error);
