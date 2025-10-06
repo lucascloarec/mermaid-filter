@@ -123,11 +123,15 @@ function parseDiagram(mmdText) {
     const nodeRegex = /^\s*([A-Za-z][\w-]*)\s*\[(.+?)]\s*$/;
     const edgeRegex = /^\s*([A-Za-z][\w-]*)\s*([\-=.]*>+)\s*([A-Za-z][\w-]*)\s*$/;
     const subgraphHeaderRegex = /^\s*subgraph\b(.*)$/i;
+    const classDefRegex = /^\s*classDef\s+([A-Za-z][\w-]*)\s+(.+)$/i;
+    const classAssignRegex = /^\s*class\s+([^\s].*?)\s+([A-Za-z][\w-]*)\s*$/i;
 
     const subgraphs = [];
     const nodesMap = new Map(); // id -> { id, label, subgraphId: string|null }
     const topNodes = [];
     const edges = [];
+    const classDefs = [];
+    const classAssigns = [];
 
     let currentSubgraph = null; // { id, headerLine, nodes: [] }
 
@@ -140,6 +144,23 @@ function parseDiagram(mmdText) {
     for (; i < lines.length; i++) {
         const line = lines[i];
         if (!line || line.trim() === '') continue;
+        if (/^\s*%%/.test(line)) continue;
+
+        // classDef lines
+        const cdm = line.match(classDefRegex);
+        if (cdm) {
+            classDefs.push(line.trim());
+            continue;
+        }
+        // class assignments
+        const cam = line.match(classAssignRegex);
+        if (cam) {
+            const idsPart = cam[1];
+            const className = cam[2];
+            const ids = idsPart.split(/[\s,]+/).map(s=>s.trim()).filter(Boolean);
+            if (ids.length) classAssigns.push({ids, className});
+            continue;
+        }
 
         const sgHeader = line.match(subgraphHeaderRegex);
         if (sgHeader) {
@@ -171,7 +192,7 @@ function parseDiagram(mmdText) {
         }
     }
 
-    return {headerLines, flowchartLine, subgraphs, topNodes, nodesMap, edges};
+    return {headerLines, flowchartLine, subgraphs, topNodes, nodesMap, edges, classDefs, classAssigns};
 }
 
 function buildFilteredMMD(model, visibleMap) {
@@ -183,6 +204,12 @@ function buildFilteredMMD(model, visibleMap) {
         out.push('');
     }
     out.push(model.flowchartLine || 'flowchart TD');
+
+    // include classDefs so styles are available
+    if (model.classDefs && model.classDefs.length) {
+        for (const ln of model.classDefs) out.push(`    ${ln}`);
+        out.push('');
+    }
 
     // Subgraphs
     for (const sg of model.subgraphs) {
@@ -198,6 +225,15 @@ function buildFilteredMMD(model, visibleMap) {
     const keptTop = model.topNodes.filter(n => isVisible(n.id));
     for (const n of keptTop) out.push(`    ${n.id}[${n.label}]`);
     if (keptTop.length) out.push('');
+
+    // Class assignments for visible nodes
+    if (model.classAssigns && model.classAssigns.length) {
+        for (const ca of model.classAssigns) {
+            const keptIds = ca.ids.filter(id => isVisible(id));
+            if (keptIds.length) out.push(`    class ${keptIds.join(',')} ${ca.className}`);
+        }
+        out.push('');
+    }
 
     // Edges where both ends visible
     for (const e of model.edges) {
